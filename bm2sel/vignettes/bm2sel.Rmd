@@ -1,0 +1,98 @@
+---
+title: "bm2sel -- a selection of salmon runs based on illumina bodymap2 results in SRA"
+author: "Vincent J. Carey, stvjc at channing.harvard.edu et al."
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteIndexEntry{bm2sel -- selection from bodymap2 RNA-seq processed by salmon}
+  %\VignetteEncoding{UTF-8}
+output:
+  BiocStyle::html_document:
+    highlight: pygments
+    number_sections: yes
+    theme: united
+    toc: yes
+---
+
+```{r setup,echo=FALSE,results="hide"}
+suppressPackageStartupMessages({
+suppressMessages({
+library(bm2sel)
+library(BiocFileCache)
+library(BiocStyle)
+library(DT)
+})
+})
+```
+
+# Introduction
+
+RNA-seq was applied to
+16 tissues and results
+contributed to NCBI SRA.
+[Some background was reported at 
+Ensembl](http://www.ensembl.info/2011/05/24/human-bodymap-2-0-data-from-illumina/).
+This package is provided as an entry-level encounter
+with a large project of recounting RNA-seq reads
+carried out by Sean Davis of NCI.
+
+# Surveying files with BiocFileCache
+
+This vignette assumes local access to the salmon results
+through execution of the `gatherForLocal` function
+of this package (bm2sel).  The contents of the `destination` folder
+used for that function
+are then identified to the local `r Biocpkg("BiocFileCache")` through
+code like
+```
+bfc = BiocFileCache()
+fls <- dir(paste(getwd(), [destination], sep="/"), recursive=TRUE, full=TRUE)
+res <- Map(bfcadd, rname=fls, fname=normalizePath(fls),
+    MoreArgs=list(x=bfc, action = "asis"))
+```
+
+I used `compend` as the value of `destination`.
+```{r lkca, cache=TRUE}
+suppressPackageStartupMessages({
+})
+bfc = BiocFileCache()
+#bfcquery(bfc, "compend")  # seems slow
+```
+To limit focus to files encoding information on the fragment-length
+distribution:
+```{r lkfld}
+fldq = bfcquery(bfc, c("compend", "fld"))
+fldq
+```
+
+# The sample-level data
+
+This table was manually prepared by reviewing SRA
+experiment pages.  The UBERON tags were manually added.
+
+```{r lookmeta}
+library(DT)
+library(bm2sel)
+data(bm2meta)
+datatable(bm2meta)
+```
+ 
+# A view of fragment-length distributions
+
+```{r fldlook}
+fldpaths = fldq$fpath
+fbins = sapply(fldpaths, getFld)
+dists = apply(fbins, 2, function(x) rep(0:1000, x))
+#dim(dists)
+#qqnorm(dists[,1], type="l")
+#for (i in 2:18) lines(qqnorm(dists[,i], plot=FALSE))
+nns = strsplit(fldpaths, "/")
+erx  = sapply(nns, "[", 7)
+colnames(dists) = erx
+opar = par(no.readonly=TRUE)
+par(mar=c(9,3,3,3))
+boxplot(data.frame(dists+1), log="y",
+  ylab="fragment length", las=2)
+par(opar)
+```
+

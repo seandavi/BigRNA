@@ -2,7 +2,7 @@ Package: bm2sel
 Title: A selection of RNA-seq experiments from Sean's big RNA compendium,
 	derived from illumina bodymap2
 Description: Illustrate processing of RNA-seq experiments from Sean's big RNA compendium.
-Version: 0.0.0
+Version: 0.0.1
 Author: Vince Carey
 Suggests: knitr
 Depends: R (>= 3.4.2)

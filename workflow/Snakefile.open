@@ -1,0 +1,189 @@
+import csv
+from collections import defaultdict
+srx = defaultdict(list)
+with open('new_paired_runs.csv') as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        if(row['taxon_id']!="9606"):
+            continue
+        srx[row['experiment_accession']].append(row)
+
+# taxon_map = { "9606" : "human",
+#               "10090" : "mouse"}
+
+# def to_species(taxon_id):
+#     return(taxon_map[taxon_id])
+
+def fastq_name(species, version, ended, sample, read_no):
+    return("{species}/{version}/{ended}/{sample}/{sample}_{read_no}.fastq.gz".format(
+        species = species,
+        version = version,
+        sample = sample,
+        ended=ended,
+        read_no=read_no))
+
+
+def pe_read1(wc):
+    d = srx[wc['experiment']]
+    d1 = filter(lambda val: val['ended']=='pe', d)
+    fastqs = [fastq_name(species = wc.species,
+                         version = wc.version,
+                         ended='pe',
+                         sample = val['run_accession'],
+                         read_no = '1') for val in d1]
+    return(sorted(fastqs))
+
+def pe_read2(wc):
+    d = srx[wc['experiment']]
+    d1 = filter(lambda val: val['ended']=='pe', d)
+    fastqs = [fastq_name(species = wc.species,
+                         version = wc.version,
+                         ended='pe',
+                         sample = val['run_accession'],
+                         read_no='2') for val in d1]
+    return(sorted(fastqs))
+
+def se_read(wc):
+    d = srx[wc['experiment']]
+    d1 = filter(lambda val: val['ended']=='se', d)
+    fastqs = [fastq_name(species = wc.species,
+                         version = wc.version,
+                         ended='se',
+                         sample = val['run_accession'],
+                         read_no='1') for val in d1]
+    return(sorted(fastqs))
+
+outfiles = expand("results/{species}/{version}/{experiment}/quant.sf.bz2",
+           experiment = sorted(list(srx.keys())),
+           version="27",
+           species = "human")
+
+rule final:
+    input: outfiles
+
+rule gencode_fasta:
+    output: "reference/{species}/gencode_v{version}.transcripts.fa.gz"
+    params: mem="1g"
+    shell: "curl ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_{wildcards.species}/release_{wildcards.version}/gencode.v{wildcards.version}.transcripts.fa.gz > {output}"
+
+rule gencode_gtf:
+    output: "reference/{species}/gencode_v{version}.annotation.gtf"
+    params: mem="1g"
+    shell: "curl ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_{wildcards.species}/release_{wildcards.version}/gencode.v{wildcards.version}.annotation.gtf.gz | gunzip > {output}"
+
+
+    
+rule salmon_index:
+    input: rules.gencode_fasta.output,
+    output: "reference/{species}/gencode_v{version}/sa.bin"
+    params:
+        index_dir = "reference/{species}/gencode_v{version}",
+        mem = "8g"
+    shell: """
+module load salmon/0.8.2
+salmon index \
+    --gencode \
+    --index {params.index_dir} \
+    --transcripts {input}"""
+
+
+
+
+#######################################
+#
+# FASTQ DUMP
+#
+# Separate SE and PE by directory
+#
+#######################################
+rule fastqdump_pe:
+    output:
+        fastq1 = temp("{species}/{version}/pe/{sample}/{sample}_1.fastq.gz"),
+        fastq2 = temp("{species}/{version}/pe/{sample}/{sample}_2.fastq.gz"),
+        srafile = temp("{species}/{version}/pe/{sample}/{sample}.sra")
+    threads: 2
+    resources: sra=1
+    params:
+        mem = "4g",
+        outdir = "{species}/{version}/pe/{sample}",
+        first = lambda wildcards: wildcards.sample[0:3],
+        second = lambda wildcards: wildcards.sample[0:6]
+    shell: """
+module load sratoolkit
+echo "{params.outdir}"
+/data/sdavis2/projects/big_rna/ascp_SRR.sh {wildcards.sample} {params.outdir}
+echo "file listing:"
+ls -lah {params.outdir}
+fastq-dump -O {params.outdir} --gzip --split-files {output.srafile}
+echo "file listing:"
+ls -lah {params.outdir}
+"""
+
+rule fastqdump_se:
+    output:
+        fastq1 = temp("{species}/{version}/se/{sample}/{sample}_1.fastq.gz"),
+        srafile = temp("{species}/{version}/se/{sample}/{sample}.sra")
+    threads: 2
+    resources: sra=1
+    params:
+        mem = "4g",
+        outdir = "{species}/{version}/se/{sample}",
+        first = lambda wildcards: wildcards.sample[0:3],
+        second = lambda wildcards: wildcards.sample[0:6]
+    shell: """
+module load sratoolkit
+/data/sdavis2/projects/big_rna/ascp_SRR.sh {wildcards.sample} {params.outdir}
+echo "file listing:"
+ls -lah {params.outdir}
+fastq-dump -O {params.outdir} --gzip --split-files {output.srafile}
+echo "file listing:"
+ls -lah {params.outdir}
+"""
+
+
+#######################################
+#
+# SALMON QUANTIFY
+#
+# Quantify reads at the level of an
+# "experiment", so combining all
+# runs, including PE and SE
+#
+#######################################
+rule salmon_quant_sra:
+    input:
+        pe_read1 = pe_read1,
+        pe_read2 = pe_read2,
+        se_read = se_read,
+        index = rules.salmon_index.output,
+        gtf   = rules.gencode_gtf.output
+    output:
+        "results/{species}/{version}/{experiment}/quant.sf.bz2"
+    priority: 50
+    params:
+        outdir = "results/{species}/{version}/{experiment}",
+        index_prefix = "reference/{species}/gencode_v{version}",
+        mem = "16g",
+        bootstraps = "25"
+    threads: 32
+    run:
+        cmd = """
+module load salmon/0.8.2
+salmon quant --dumpEq \
+    --threads {threads} \
+    --numBootstraps {params.bootstraps} \
+    --gcBias \
+    --seqBias \
+    --index {params.index_prefix} \
+    --libType A \
+    --output {params.outdir} \
+    -g {input.gtf} """
+        if(len(input.pe_read1)>0):
+            cmd += " -1 {input.pe_read1} -2 {input.pe_read2} "
+        if(len(input.se_read)>0):
+            cmd += " -r {input.se_read}"
+        cmd += """
+bzip2 {params.outdir}/quant.sf
+bzip2 {params.outdir}/quant.genes.sf
+"""
+        shell(cmd)

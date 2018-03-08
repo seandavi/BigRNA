@@ -2,4 +2,8 @@
 
 export(gatherForLocal)
 export(getFld)
+export(humrnaMeta)
+export(makeRegex)
+import(mongolite)
+importFrom(rjson,toJSON)
 importFrom(utils,data)

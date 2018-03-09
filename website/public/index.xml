@@ -36,11 +36,11 @@ We&amp;rsquo;ll start with creating a new site with a very basic template.</desc
     <item>
       <title>About</title>
       <link>http://bigrna.cancerdatasci.org/about/</link>
-      <pubDate>Tue, 27 Jun 2017 17:39:21 -0700</pubDate>
+      <pubDate>Fri, 09 Mar 2018 06:00:00 -0500</pubDate>
       
       <guid>http://bigrna.cancerdatasci.org/about/</guid>
-      <description>Welcome to the Osprey Theme To create an about section, generate an about.md file in your content folder by doing:
-$ hugo new about.md  Then add your own content to the markdown file. Everything in the file will be generated to show here on the home page.</description>
+      <description>Welcome to the BigRNA project We have processed 187,000 RNA-seq samples and make them avialable here in their raw format on a per sample basis. The goal is to allow large-scale mining of expression profiles to learn new biology, enhance or create analytical methods requiring large gene expression compendia, and to provide resources for machine learning and artificial intelligence approaches to genomics.
+This project is a work-in-progress. To download a manifest of currently available samples, either click here or at the console do:</description>
     </item>
     
     <item>

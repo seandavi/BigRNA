@@ -1,0 +1,44 @@
+title = "BigRNA"
+baseURL = "http://bigrna.cancerdatasci.org"
+tags = ["portfolio", "web design", "blog"]
+languageCode = "en-US"
+config = "config.toml"
+theme = "osprey"
+canonifyURLS = true
+googleAnalytics = ""
+disqusShortname = "seandavis12"
+disableKinds = ["taxonomy", "taxonomyTerm"] # This theme does not currently use "tag" and "category" taxonomies
+
+[Params]
+    tagline = "BigRNA"
+    author = "Sean Davis"
+    description = "A compendium of human RNA-seq gene expression profiles"
+    logoBig = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Pre-mRNA-1ysv-tubes.png/1024px-Pre-mRNA-1ysv-tubes.png"
+    logoSmall = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Pre-mRNA-1ysv-tubes.png/1024px-Pre-mRNA-1ysv-tubes.png"
+    favicon = "favicon.ico"
+    opengraphImage = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Pre-mRNA-1ysv-tubes.png/1024px-Pre-mRNA-1ysv-tubes.png"
+    twitter = "seandavis12"
+    linkedin = "seandavis12"
+    github = "seandavi"
+    email = ""
+    googleTagManger = ""
+    highlightJS = true
+    copyright = true
+    credit = true
+    customCSS = false
+    cacheBustCSS = false
+    cacheBustJS = false
+    ajaxFormspree = true
+
+[[menu.main]]
+    name = "About"
+    url  = "/#about"
+    weight = 1
+[[menu.main]]
+    name = "Work"
+    url  = "/#work"
+    weight = 2
+[[menu.main]]
+    name = "Contact"
+    url  = "/#contact"
+    weight = 4

@@ -21,6 +21,8 @@ library(bm2sel)
 library(BiocFileCache)
 library(BiocStyle)
 library(DT)
+library(rjson)
+library(mongolite)
 })
 })
 ```
@@ -36,7 +38,13 @@ This package is provided as an entry-level encounter
 with a large project of recounting RNA-seq reads
 carried out by Sean Davis of NCI.
 
-# Surveying files with BiocFileCache
+The package includes some additional infrastructure
+to assess approaches to handling metadata for a larger
+collection of samples.
+
+# A small collection of RNA-seq samples
+
+## Surveying files with BiocFileCache
 
 This vignette assumes local access to the salmon results
 through execution of the `gatherForLocal` function
@@ -65,7 +73,7 @@ fldq = bfcquery(bfc, c("compend", "fld"))
 fldq
 ```
 
-# The sample-level data
+## The sample-level data
 
 This table was manually prepared by reviewing SRA
 experiment pages.  The UBERON tags were manually added.
@@ -77,7 +85,7 @@ data(bm2meta)
 datatable(bm2meta)
 ```
  
-# A view of fragment-length distributions
+## A view of fragment-length distributions
 
 ```{r fldlook}
 fldpaths = fldq$fpath
@@ -96,3 +104,36 @@ boxplot(data.frame(dists+1), log="y",
 par(opar)
 ```
 
+# Some metadata in a mongodb in EC2
+
+We have established a mongodb server in an EC2 instance.
+Code by which the content was derived from JSON documents
+in the series
+```
+s3://big_rna/sra_metadata/part-00000-65e1fc6e-f815-47ab-a6d8-7465b767f61e-c000.json.bz2 part1
+```
+are present in the scripts folder of this package.
+
+We get a mongolite-based interface to the database as follows:
+```{r lkec2}
+library(mongolite)
+m1 = humrnaMeta()
+m1
+```
+
+Build a query using toJSON and execute using the `find` method.
+
+```{r lkq}
+library(rjson)
+q1 = toJSON(list(sample_accession="ERS1928689"))
+res1 = m1$find(q1)
+dim(res1)
+names(res1)
+```
+
+There is an elementary approach to search by regular expression.
+```{r lkre}
+re = makeRegex(fld="study_abstract", patt="SRPK1")
+res2 = m1$find(re)
+dim(res2)
+```

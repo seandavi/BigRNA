@@ -17,5 +17,8 @@ humrnaMeta = function()
 #' @examples
 #' makeRegex()
 #' @export
-makeRegex = function(fld="study_center", patt="UT", opt="i")
-  toJSON(sprintf("{\"%s\":{\"$regex\":\"%s\",\"$options\":\"%s\"}}", fld, patt, opt))
+makeRegex = function(fld="run_center_name", patt="UT", opt="i") {
+  qq = list(tmp=list(`$regex`=patt, `$options`=opt))
+  names(qq) = fld
+  toJSON(qq)
+}

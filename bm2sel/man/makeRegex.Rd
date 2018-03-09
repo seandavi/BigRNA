@@ -4,7 +4,7 @@
 \alias{makeRegex}
 \title{helper for regex construction for mongolite find}
 \usage{
-makeRegex(fld = "study_center", patt = "UT", opt = "i")
+makeRegex(fld = "run_center_name", patt = "UT", opt = "i")
 }
 \arguments{
 \item{fld}{character(1) field name}
